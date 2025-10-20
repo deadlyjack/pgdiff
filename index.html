@@ -4,16 +4,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Postgresql Diff</title>
-  <!-- og graph -->
-  <meta property="og:title" content="PG Diff - PostgreSQL Schema Diff Tool">
+
+  <!-- SEO Meta Tags -->
+  <title>PostgreSQL Schema Diff Tool - Generate ALTER Statements Online | PG Diff</title>
+  <meta name="description"
+    content="Free online PostgreSQL schema comparison tool. Compare database schemas, detect table changes, generate ALTER statements automatically. Supports table renames, DROP detection, data migration, and syntax validation. Works on desktop and mobile.">
+  <meta name="keywords"
+    content="postgresql diff, postgres schema comparison, database schema diff, sql diff tool, postgresql migration, alter statement generator, postgres schema compare, database diff, postgresql online tool, sql schema comparison, postgres alter table, database migration tool, postgresql schema changes, sql diff online, postgres diff checker, database schema migration, postgresql rename table, postgresql drop table, sql syntax validator, postgres schema tool">
+  <meta name="author" content="FoxDebug">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  <meta name="revisit-after" content="7 days">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://pgdiff.foxdebug.com">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PostgreSQL Schema Diff Tool - Generate ALTER Statements Online">
   <meta property="og:description"
-    content="A web-based tool to compare and generate ALTER statements for PostgreSQL database schemas.">
+    content="Free online PostgreSQL schema comparison tool. Compare database schemas, detect table changes, generate ALTER statements automatically.">
   <meta property="og:image" content="https://pgdiff.foxdebug.com/screenshot.png">
   <meta property="og:url" content="https://pgdiff.foxdebug.com">
-  <meta name="twitter:card" content="summary_large_image">
-  <!-- favicon -->
+  <meta property="og:site_name" content="PG Diff">
 
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PostgreSQL Schema Diff Tool - Generate ALTER Statements Online">
+  <meta name="twitter:description"
+    content="Free online PostgreSQL schema comparison tool. Compare database schemas, detect table changes, generate ALTER statements automatically.">
+  <meta name="twitter:image" content="https://pgdiff.foxdebug.com/screenshot.png">
+
+  <!-- Additional SEO -->
+  <meta name="theme-color" content="#336791">
+  <meta name="application-name" content="PG Diff">
+
+  <!-- Favicon -->
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <script type="importmap">
     {
@@ -208,6 +234,8 @@
       .editor-section {
         height: 100%;
         width: 100%;
+        position: relative;
+        z-index: 100;
       }
 
       #alterEditorTab:checked~#app .tabs [for="alterEditorTab"],
@@ -240,7 +268,7 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <h1 style="margin: 0; display: flex; align-items: center;">
           <img src="logo.png" alt="Logo" style="height:30px; vertical-align: middle; margin-right:10px;" />
-          PG Diff
+          <span style="display: none;">PG</span> Diff
         </h1>
         <a href="https://github.com/deadlyjack/pgdiff" target="_blank" rel="noopener noreferrer"
           style="margin-left: 10px;">

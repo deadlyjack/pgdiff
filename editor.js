@@ -19,10 +19,18 @@ CREATE TABLE person (
 );`;
 
 const theme = document.getElementById('dark-theme');
-const isDark = localStorage.getItem('theme') === 'dark';
-if (isDark) {
-  theme.checked = true;
+
+// Determine theme: use localStorage if set, otherwise follow system preference
+let isDark;
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme !== null) {
+  isDark = savedTheme === 'dark';
+} else {
+  // Follow system theme
+  isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
+
+theme.checked = isDark;
 
 // Line decoration for ERROR and CAUTION lines
 const lineDecorations = ViewPlugin.fromClass(class {
