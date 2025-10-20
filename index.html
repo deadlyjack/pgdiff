@@ -15,8 +15,18 @@
   <!-- favicon -->
 
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.54.0/min/vs/loader.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/monaco-editor@0.54.0/min/vs/editor/editor.main.min.css" rel="stylesheet">
+  <script type="importmap">
+    {
+      "imports": {
+        "codemirror": "https://esm.sh/codemirror@6.0.1",
+        "@codemirror/lang-sql": "https://esm.sh/@codemirror/lang-sql@6.8.0",
+        "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2",
+        "@codemirror/view": "https://esm.sh/@codemirror/view@6.34.3",
+        "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1"
+      }
+    }
+  </script>
+  <script type="module" src="./editor.js"></script>
   <script src="./script.js"></script>
 
   <style>
@@ -68,6 +78,44 @@
     .editor {
       width: 100%;
       height: calc(100% - 30px);
+      overflow: auto;
+    }
+
+    .cm-editor {
+      height: 100%;
+      font-size: 14px;
+    }
+
+    .cm-scroller {
+      overflow: auto;
+    }
+
+    .error-line {
+      background-color: rgba(255, 0, 0, 0.1);
+    }
+
+    .error-line .cm-line {
+      color: #ff0000;
+      font-weight: bold;
+    }
+
+    .caution-line {
+      background-color: rgba(255, 153, 0, 0.1);
+    }
+
+    .caution-line .cm-line {
+      font-weight: bold;
+    }
+
+    #dark-theme:checked~#app .cm-editor {
+      background-color: #1e1e1e;
+      color: #cfcfcf;
+    }
+
+    #dark-theme:checked~#app .cm-gutters {
+      background-color: #1e1e1e;
+      color: #858585;
+      border-right: 1px solid #444;
     }
 
     header {
@@ -109,12 +157,6 @@
 
     #dark-theme:checked~#app a {
       color: #9cdcfe;
-    }
-
-    #dark-theme:checked~#app .monaco-editor,
-    #dark-theme:checked~#app .monaco-diff-editor {
-      background-color: #1e1e1e !important;
-      color: #cfcfcf !important;
     }
 
     #dark-theme:checked~#app label[for="dark-theme"]::after {
@@ -244,209 +286,6 @@
       </div>
     </div>
   </div>
-
-  <script>
-    const theme = document.getElementById('dark-theme');
-    const isDark = localStorage.getItem('theme') === 'dark';
-    if (isDark) {
-      theme.checked = true;
-    }
-    const exampleOld = `CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
-CREATE TABLE person (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100),
-    current_mood mood DEFAULT 'ok'
-);`;
-    const exampleNew = `CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy', 'excited');
-CREATE TABLE person (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(150),
-    current_mood mood DEFAULT 'happy',
-    age INT
-);`;
-
-    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.54.0/min/vs' } });
-    require(['vs/editor/editor.main'], function () {
-      // Define custom theme with text colors for error/caution highlighting
-      monaco.editor.defineTheme('errorCommentTheme', {
-        base: isDark ? 'vs-dark' : 'vs',
-        inherit: true,
-        rules: [
-          { token: 'comment.error', foreground: 'ff0000', fontStyle: 'bold' },
-          { token: 'comment.caution', foreground: 'ff9900', fontStyle: 'bold' },
-          { token: 'keyword.drop', fontStyle: 'bold' }
-        ],
-        colors: {}
-      });
-
-      // Simple tokenization - just match whole comment lines
-      monaco.languages.register({ id: 'pgsql-enhanced' });
-
-      monaco.languages.setMonarchTokensProvider('pgsql-enhanced', {
-        tokenizer: {
-          root: [
-            // ERROR and CAUTION comments - match entire line
-            [/--\s*ERROR:.*$/, 'comment.error'],
-            [/--\s*CAUTION:.*$/, 'comment.caution'],
-            // Normal comments
-            [/--.*$/, 'comment'],
-            // DROP TABLE keywords only (not the entire statement)
-            [/\b(DROP\s+TABLE)\b/i, 'keyword.drop'],
-            // Strings
-            [/'[^']*'/, 'string'],
-            [/"[^"]*"/, 'string'],
-            // Numbers
-            [/\d+/, 'number'],
-            // Keywords
-            [/\b(CREATE|TABLE|TYPE|ALTER|DROP|ADD|COLUMN|ENUM|AS|IF|NOT|EXISTS|DEFAULT|PRIMARY|KEY|FOREIGN|REFERENCES|UNIQUE|CHECK|CONSTRAINT|SERIAL|BIGSERIAL|INTEGER|BIGINT|SMALLINT|BOOLEAN|TEXT|VARCHAR|CHAR|TIMESTAMP|DATE|TIME|NUMERIC|DECIMAL|REAL|DOUBLE\s+PRECISION|CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|RENAME|TO|SET|NULL|TRUE|FALSE|USING|CASE|WHEN|THEN|ELSE|END|INSERT|INTO|SELECT|FROM|VALUES)\b/i, 'keyword'],
-            // Identifiers
-            [/[a-zA-Z_]\w*/, 'identifier'],
-          ]
-        }
-      });
-
-      // Set the custom theme
-      monaco.editor.setTheme('errorCommentTheme');
-
-      const oldEditor = monaco.editor.create(oldSchema, {
-        value: localStorage.getItem('oldSchema') || exampleOld,
-        language: 'sql',
-        minimap: { enabled: false },
-        automaticLayout: true,
-      });
-      const newEditor = monaco.editor.create(newSchema, {
-        value: localStorage.getItem('newSchema') || exampleNew,
-        language: 'sql',
-        minimap: { enabled: false },
-        automaticLayout: true,
-      });
-      const diffEditor = monaco.editor.createDiffEditor(diffViewer, {
-        enableSplitViewResizing: false,
-        renderSideBySide: false,
-        automaticLayout: true,
-        readOnly: true,
-        renderOverviewRuler: false,
-      });
-      const alterEditor = monaco.editor.create(alterSchema, {
-        value: generateSchemaAlters(oldEditor.getValue(), newEditor.getValue()).join('\n'),
-        language: 'pgsql-enhanced',
-        minimap: { enabled: false },
-        automaticLayout: true,
-        readOnly: true,
-      });
-
-      // Function to apply background decorations to ERROR, CAUTION, and DROP TABLE lines
-      function applyLineDecorations(editor) {
-        const model = editor.getModel();
-        if (!model) return;
-
-        const decorations = [];
-        const lineCount = model.getLineCount();
-
-        for (let lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
-          const lineContent = model.getLineContent(lineNumber);
-
-          // Check for ERROR comments
-          if (/^--\s*ERROR:/i.test(lineContent)) {
-            decorations.push({
-              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-              options: {
-                isWholeLine: true,
-                className: 'error-line-decoration',
-                inlineClassName: 'error-line-text'
-              }
-            });
-          }
-          // Check for CAUTION comments or DROP TABLE statements
-          else if (/^--\s*CAUTION:/i.test(lineContent) || /^\s*DROP\s+TABLE/i.test(lineContent)) {
-            decorations.push({
-              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-              options: {
-                isWholeLine: true,
-                className: 'caution-line-decoration',
-                inlineClassName: 'caution-line-text'
-              }
-            });
-          }
-        }
-
-        editor.deltaDecorations([], decorations);
-      }
-
-      // Add CSS for line decorations
-      const style = document.createElement('style');
-      style.textContent = `
-        .error-line-decoration {
-          background: rgba(255, 0, 0, 0.1);
-        }
-        .error-line-text {
-          color: #ff0000 !important;
-          font-weight: bold;
-        }
-        .caution-line-decoration {
-          background: rgba(255, 153, 0, 0.1);
-        }
-        .caution-line-text {
-          font-weight: bold;
-        }
-      `;
-      document.head.appendChild(style);
-
-      // Apply decorations initially
-      applyLineDecorations(alterEditor);
-
-      diffEditor.setModel({
-        original: oldEditor.getModel(),
-        modified: newEditor.getModel()
-      });
-
-      newEditor.onDidChangeModelContent(() => {
-        localStorage.setItem('newSchema', newEditor.getValue());
-        updateAlterSchema(oldEditor, newEditor, alterEditor, applyLineDecorations);
-      });
-      oldEditor.onDidChangeModelContent(() => {
-        localStorage.setItem('oldSchema', oldEditor.getValue());
-        updateAlterSchema(oldEditor, newEditor, alterEditor, applyLineDecorations);
-      });
-
-      oldSchemaFileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          oldEditor.setValue(e.target.result);
-        };
-        reader.readAsText(file);
-      });
-
-      newSchemaFileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          newEditor.setValue(e.target.result);
-        };
-        reader.readAsText(file);
-      });
-    });
-
-    function updateAlterSchema(oldSchemaEditor, newSchemaEditor, alterEditor, applyDecorations) {
-      const oldSchema = oldSchemaEditor.getValue();
-      const newSchema = newSchemaEditor.getValue();
-      const alters = generateSchemaAlters(oldSchema, newSchema);
-
-      alterEditor.setValue(alters.join('\n'));
-
-      // Reapply decorations after content update
-      if (applyDecorations) {
-        setTimeout(() => applyDecorations(alterEditor), 0);
-      }
-    }
-
-    function toggleTheme() {
-      const isDark = theme.checked;
-      monaco.editor.setTheme(isDark ? 'vs-dark' : 'vs');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
-  </script>
 </body>
 
 </html>
