@@ -2,6 +2,7 @@ import { EditorView, basicSetup } from 'codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { ViewPlugin, Decoration } from '@codemirror/view';
+import { MergeView } from '@codemirror/merge';
 
 const exampleOld = `CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
 CREATE TABLE person (
@@ -31,6 +32,11 @@ if (savedTheme !== null) {
 }
 
 theme.checked = isDark;
+
+// Sync checkbox with the dark-mode class that was set earlier
+if (isDark && !document.documentElement.classList.contains('dark-mode')) {
+  document.documentElement.classList.add('dark-mode');
+}
 
 // Line decoration for ERROR and CAUTION lines
 const lineDecorations = ViewPlugin.fromClass(class {
@@ -125,44 +131,32 @@ const alterEditor = createEditor(
   true
 );
 
-// Simple diff viewer - just show both schemas side by side
+// Create diff viewer using MergeView
 const diffContainer = document.getElementById('diffViewer');
-const diffBorderColor = isDark ? '#444' : '#ccc';
-const diffBgColor = isDark ? '#252525' : '#f0f0f0';
-const diffTextColor = isDark ? '#cfcfcf' : '#000';
+const extensions = [basicSetup, sql(), EditorView.lineWrapping];
+if (isDark) {
+  extensions.push(oneDark);
+}
 
-diffContainer.innerHTML = `
-  <div style="display: flex; height: 100%; overflow: auto;">
-    <div style="flex: 1; overflow: auto; border-right: 1px solid ${diffBorderColor};">
-      <div class="diff-title" style="padding: 5px; background: ${diffBgColor}; color: ${diffTextColor}; font-weight: bold; border-bottom: 1px solid ${diffBorderColor};">Old Schema</div>
-      <div id="diffOld" style="height: calc(100% - 30px);"></div>
-    </div>
-    <div style="flex: 1; overflow: auto;">
-      <div class="diff-title" style="padding: 5px; background: ${diffBgColor}; color: ${diffTextColor}; font-weight: bold; border-bottom: 1px solid ${diffBorderColor};">New Schema</div>
-      <div id="diffNew" style="height: calc(100% - 30px);"></div>
-    </div>
-  </div>
-`;
-
-const diffOldEditor = createEditor(
-  document.getElementById('diffOld'),
-  localStorage.getItem('oldSchema') || exampleOld,
-  true
-);
-
-const diffNewEditor = createEditor(
-  document.getElementById('diffNew'),
-  localStorage.getItem('newSchema') || exampleNew,
-  true
-);
+const mergeView = new MergeView({
+  a: {
+    doc: localStorage.getItem('oldSchema') || exampleOld,
+    extensions
+  },
+  b: {
+    doc: localStorage.getItem('newSchema') || exampleNew,
+    extensions
+  },
+  parent: diffContainer
+});
 
 // Update listeners
 oldEditor.dom.addEventListener('input', () => {
   const value = oldEditor.state.doc.toString();
   localStorage.setItem('oldSchema', value);
   updateAlterSchema(oldEditor, newEditor, alterEditor);
-  diffOldEditor.dispatch({
-    changes: { from: 0, to: diffOldEditor.state.doc.length, insert: value }
+  mergeView.a.dispatch({
+    changes: { from: 0, to: mergeView.a.state.doc.length, insert: value }
   });
 });
 
@@ -170,8 +164,8 @@ newEditor.dom.addEventListener('input', () => {
   const value = newEditor.state.doc.toString();
   localStorage.setItem('newSchema', value);
   updateAlterSchema(oldEditor, newEditor, alterEditor);
-  diffNewEditor.dispatch({
-    changes: { from: 0, to: diffNewEditor.state.doc.length, insert: value }
+  mergeView.b.dispatch({
+    changes: { from: 0, to: mergeView.b.state.doc.length, insert: value }
   });
 });
 
@@ -186,8 +180,8 @@ document.getElementById('oldSchemaFileInput').addEventListener('change', (event)
     });
     localStorage.setItem('oldSchema', content);
     updateAlterSchema(oldEditor, newEditor, alterEditor);
-    diffOldEditor.dispatch({
-      changes: { from: 0, to: diffOldEditor.state.doc.length, insert: content }
+    mergeView.a.dispatch({
+      changes: { from: 0, to: mergeView.a.state.doc.length, insert: content }
     });
   };
   reader.readAsText(file);
@@ -203,8 +197,8 @@ document.getElementById('newSchemaFileInput').addEventListener('change', (event)
     });
     localStorage.setItem('newSchema', content);
     updateAlterSchema(oldEditor, newEditor, alterEditor);
-    diffNewEditor.dispatch({
-      changes: { from: 0, to: diffNewEditor.state.doc.length, insert: content }
+    mergeView.b.dispatch({
+      changes: { from: 0, to: mergeView.b.state.doc.length, insert: content }
     });
   };
   reader.readAsText(file);
@@ -214,6 +208,14 @@ document.getElementById('newSchemaFileInput').addEventListener('change', (event)
 window.toggleTheme = function () {
   const isDark = theme.checked;
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+  // Toggle dark-mode class
+  if (isDark) {
+    document.documentElement.classList.add('dark-mode');
+  } else {
+    document.documentElement.classList.remove('dark-mode');
+  }
+
   // Reload to apply theme (CodeMirror theme needs to be set at initialization)
   location.reload();
 };

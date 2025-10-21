@@ -41,6 +41,20 @@
 
   <!-- Favicon -->
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+
+  <!-- Prevent flash by setting theme immediately -->
+  <script>
+    // Check theme preference before any rendering
+    const savedTheme = localStorage.getItem('theme');
+    const isDark = savedTheme !== null
+      ? savedTheme === 'dark'
+      : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (isDark) {
+      document.documentElement.classList.add('dark-mode');
+    }
+  </script>
+
   <script type="importmap">
     {
       "imports": {
@@ -48,7 +62,8 @@
         "@codemirror/lang-sql": "https://esm.sh/@codemirror/lang-sql@6.8.0",
         "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2",
         "@codemirror/view": "https://esm.sh/@codemirror/view@6.34.3",
-        "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1"
+        "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1",
+        "@codemirror/merge": "https://esm.sh/@codemirror/merge@6.7.2"
       }
     }
   </script>
@@ -63,11 +78,25 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
+      background-color: #ffffff;
+      transition: background-color 0.2s;
+    }
+
+    /* Dark mode styles applied immediately */
+    .dark-mode body,
+    .dark-mode html {
+      background-color: #1e1e1e;
+      color: #cfcfcf;
     }
 
     #app {
       height: 100%;
       width: 100%;
+    }
+
+    .dark-mode #app {
+      background-color: #1e1e1e;
+      color: #cfcfcf;
     }
 
     .container {
@@ -186,6 +215,26 @@
     }
 
     #dark-theme:checked~#app label[for="dark-theme"]::after {
+      content: '☀️';
+    }
+
+    .dark-mode .editor {
+      border-color: #444;
+    }
+
+    .dark-mode header {
+      border-color: #444;
+    }
+
+    .dark-mode label[for="dark-theme"] {
+      color: #cfcfcf;
+    }
+
+    .dark-mode a {
+      color: #9cdcfe;
+    }
+
+    .dark-mode label[for="dark-theme"]::after {
       content: '☀️';
     }
 
